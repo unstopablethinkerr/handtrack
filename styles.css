@@ -5,6 +5,7 @@ body {
     height: 100vh;
     margin: 0;
     background-color: #f0f0f0;
+    z-index:0 ;
 }
 
 #videoContainer {
@@ -17,10 +18,12 @@ body {
     left: 0;
     width: 100%;
     height: auto;
+      z-index:2 ;
 }
 
 #canvas {
     position: absolute;
     top: 0;
     left: 0;
+      z-index:5 ;
 }
