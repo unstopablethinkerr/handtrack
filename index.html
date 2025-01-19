@@ -3,147 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AR Hand and Face Tracking</title>
-    <script src="handtrack.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
+    <title>Face & Hand Tracking with Virtual Gifts</title>
     <script src="aframe.min.js"></script>
+    <script src="handtrack.min.js"></script>
     <style>
-        body, html { margin: 0; overflow: hidden; }
-        #reset-button {
-            position: absolute;
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+        }
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        #resetButton {
+            position: fixed;
             bottom: 10px;
             left: 10px;
-            padding: 10px 20px;
-            background: #ff5722;
+            background-color: #ff6666;
             color: white;
             border: none;
             border-radius: 5px;
+            padding: 10px 20px;
             font-size: 16px;
-            z-index: 1000;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <!-- A-Frame Scene -->
-    <a-scene>
-        <a-assets>
-            <a-asset-item id="treasure-box" src="treasure_box.glb"></a-asset-item>
-            <a-asset-item id="gift" src="gift0.glb"></a-asset-item>
-        </a-assets>
+    <video id="video" autoplay></video>
+    <canvas id="canvas"></canvas>
+    <button id="resetButton">Reset</button>
 
-        <!-- Camera -->
-        <a-entity camera look-controls>
-            <a-entity id="treasure-boxes">
-                <a-entity gltf-model="#treasure-box" position="-0.5 0 -1" id="box1"></a-entity>
-                <a-entity gltf-model="#treasure-box" position="0 0 -1" id="box2"></a-entity>
-                <a-entity gltf-model="#treasure-box" position="0.5 0 -1" id="box3"></a-entity>
-            </a-entity>
-        </a-entity>
+    <a-scene embedded>
+        <a-entity id="box1" gltf-model="treasure_box.glb" position="-1 0 -3"></a-entity>
+        <a-entity id="box2" gltf-model="treasure_box.glb" position="0 0 -3"></a-entity>
+        <a-entity id="box3" gltf-model="treasure_box.glb" position="1 0 -3"></a-entity>
     </a-scene>
 
-    <!-- Reset Button -->
-    <button id="reset-button">Reset</button>
-
     <script>
-        const resetButton = document.getElementById('reset-button');
-        const boxes = document.querySelectorAll('#treasure-boxes a-entity');
-        const video = document.createElement('video');
-        video.autoplay = true;
-        video.style.display = 'none';
-        document.body.appendChild(video);
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        const resetButton = document.getElementById('resetButton');
 
-        let faceMeshModel, handModel;
+        const modelParams = {
+            flipHorizontal: true,
+            imageScaleFactor: 0.6,
+            maxNumBoxes: 5,
+            iouThreshold: 0.5,
+            scoreThreshold: 0.7,
+        };
 
-        // Load FaceMesh and Handtrack models
-        async function loadModels() {
-            faceMeshModel = await faceLandmarksDetection.load(
-                faceLandmarksDetection.SupportedPackages.mediapipeFacemesh
-            );
-            handModel = await handTrack.load({
-                flipHorizontal: true,
-                maxNumBoxes: 1,
-                scoreThreshold: 0.7,
+        let model;
+
+        const startTracking = async () => {
+            model = await handTrack.load(modelParams);
+            handTrack.startVideo(video).then(status => {
+                if (status) {
+                    navigator.getUserMedia(
+                        { video: {} },
+                        stream => {
+                            video.srcObject = stream;
+                            trackHandsAndFace();
+                        },
+                        err => console.log(err)
+                    );
+                }
             });
+        };
 
-            startVideo();
-        }
+        const trackHandsAndFace = () => {
+            setInterval(async () => {
+                const predictions = await model.detect(video);
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                model.renderPredictions(predictions, canvas, context, video);
 
-        // Start video stream
-        async function startVideo() {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            video.srcObject = stream;
-            video.play();
-            detect();
-        }
+                predictions.forEach(prediction => {
+                    const { bbox, label } = prediction;
+                    const [x, y, width, height] = bbox;
 
-        // Reset game logic
+                    // Highlight face or hand
+                    if (label === 'face' || label === 'hand') {
+                        context.strokeStyle = 'green';
+                        context.lineWidth = 4;
+                        context.strokeRect(x, y, width, height);
+
+                        // If hand is near a box, reveal the gift
+                        if (label === 'hand' && width > 100) { // Example proximity check
+                            const box = document.querySelector(`#box${Math.ceil(Math.random() * 3)}`);
+                            box.setAttribute('gltf-model', 'gift0.glb');
+                        }
+                    }
+                });
+            }, 100);
+        };
+
         resetButton.addEventListener('click', () => {
-            boxes.forEach(box => {
-                box.setAttribute('gltf-model', '#treasure-box');
-                box.setAttribute('visible', true);
-            });
+            window.location.reload();
         });
 
-        // Detection loop
-        async function detect() {
-            const detectionInterval = setInterval(async () => {
-                // Face Detection
-                const facePredictions = await faceMeshModel.estimateFaces({ input: video });
-                if (facePredictions.length > 0) {
-                    const nose = facePredictions[0].scaledMesh[1]; // Nose tip
-                    positionTreasureBoxes(nose);
-                }
-
-                // Hand Detection
-                const handPredictions = await handModel.detect(video);
-                handleHandDetection(handPredictions);
-            }, 50);
-        }
-
-        // Position treasure boxes based on nose position
-        function positionTreasureBoxes(nose) {
-            const x = (nose[0] / video.videoWidth) * 2 - 1;
-            const y = -(nose[1] / video.videoHeight) * 2 + 1;
-            const z = -1.5;
-
-            document.querySelector('#box1').setAttribute('position', `${x - 0.5} ${y} ${z}`);
-            document.querySelector('#box2').setAttribute('position', `${x} ${y} ${z}`);
-            document.querySelector('#box3').setAttribute('position', `${x + 0.5} ${y} ${z}`);
-        }
-
-        // Handle hand detection logic
-        function handleHandDetection(predictions) {
-            if (predictions.length > 0) {
-                // Add visual feedback
-                boxes.forEach(box => {
-                    box.setAttribute('material', 'color: green');
-                });
-
-                setTimeout(() => {
-                    boxes.forEach(box => {
-                        box.setAttribute('material', 'color: white');
-                    });
-                }, 1000);
-
-                // Check hand intersection with boxes
-                predictions.forEach(prediction => {
-                    const handBox = prediction.bbox;
-                    boxes.forEach(box => {
-                        const boxPosition = box.object3D.position;
-                        if (
-                            handBox[0] < boxPosition.x + 0.25 &&
-                            handBox[0] > boxPosition.x - 0.25 &&
-                            handBox[1] < boxPosition.y + 0.25 &&
-                            handBox[1] > boxPosition.y - 0.25
-                        ) {
-                            box.setAttribute('gltf-model', '#gift');
-                        }
-                    });
-                });
-            }
-        }
-
-        loadModels();
+        startTracking();
     </script>
 </body>
 </html>
