@@ -27,16 +27,15 @@ document.addEventListener('DOMContentLoaded', (event) => {
         handTrack.startVideo(video).then(status => {
             if (status) {
                 console.log('Video started');
-                handTrack.runDetection(video, modelParams)
-                    .then(predictions => {
-                        console.log('HandTrack predictions:', predictions);
-                        model.detect(video).then(predictions => {
-                            console.log('Predictions: ', predictions);
-                            context.clearRect(0, 0, canvas.width, canvas.height);
-                            handTrack.renderPredictions(predictions, canvas, context, video);
-                            requestAnimationFrame(() => handTrack.runDetection(video, modelParams));
-                        });
+                function runDetection() {
+                    model.detect(video).then(predictions => {
+                        console.log('Predictions: ', predictions);
+                        context.clearRect(0, 0, canvas.width, canvas.height);
+                        handTrack.renderPredictions(predictions, canvas, context, video);
+                        requestAnimationFrame(runDetection);
                     });
+                }
+                runDetection();
             } else {
                 console.log('Video failed to start');
             }
