@@ -48,16 +48,10 @@
     <button id="resetButton">Reset</button>
 
     <a-scene embedded>
-        <!-- Preload 3D Models -->
-        <a-assets>
-            <a-asset-item id="treasureBoxModel" src="treasure_box.glb"></a-asset-item>
-            <a-asset-item id="giftModel" src="gift0.glb"></a-asset-item>
-        </a-assets>
-
         <!-- Treasure Boxes -->
-        <a-entity id="box1" gltf-model="#treasureBoxModel" position="-1 0 -3" scale="0.5 0.5 0.5"></a-entity>
-        <a-entity id="box2" gltf-model="#treasureBoxModel" position="0 0 -3" scale="0.5 0.5 0.5"></a-entity>
-        <a-entity id="box3" gltf-model="#treasureBoxModel" position="1 0 -3" scale="0.5 0.5 0.5"></a-entity>
+        <a-entity id="box1" gltf-model="https://github.com/unstopablethinkerr/handtrack/raw/refs/heads/main/treasure_box.glb" position="-1 0 -3" scale="0.5 0.5 0.5"></a-entity>
+        <a-entity id="box2" gltf-model="https://github.com/unstopablethinkerr/handtrack/raw/refs/heads/main/treasure_box.glb" position="0 0 -3" scale="0.5 0.5 0.5"></a-entity>
+        <a-entity id="box3" gltf-model="https://github.com/unstopablethinkerr/handtrack/raw/refs/heads/main/treasure_box.glb" position="1 0 -3" scale="0.5 0.5 0.5"></a-entity>
     </a-scene>
 
     <script>
@@ -112,11 +106,26 @@
                             const handCenterX = x + width / 2;
 
                             if (handCenterX < window.innerWidth / 3) {
-                                document.getElementById('box1').setAttribute('gltf-model', '#giftModel');
+                                document
+                                    .getElementById('box1')
+                                    .setAttribute(
+                                        'gltf-model',
+                                        'https://github.com/unstopablethinkerr/handtrack/raw/refs/heads/main/gift0.glb'
+                                    );
                             } else if (handCenterX < (2 * window.innerWidth) / 3) {
-                                document.getElementById('box2').setAttribute('gltf-model', '#giftModel');
+                                document
+                                    .getElementById('box2')
+                                    .setAttribute(
+                                        'gltf-model',
+                                        'https://github.com/unstopablethinkerr/handtrack/raw/refs/heads/main/gift0.glb'
+                                    );
                             } else {
-                                document.getElementById('box3').setAttribute('gltf-model', '#giftModel');
+                                document
+                                    .getElementById('box3')
+                                    .setAttribute(
+                                        'gltf-model',
+                                        'https://github.com/unstopablethinkerr/handtrack/raw/refs/heads/main/gift0.glb'
+                                    );
                             }
                         }
                     }
