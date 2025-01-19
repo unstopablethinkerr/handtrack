@@ -1,17 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hand Tracking with Green Border</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand Tracking Demo</title>
+    <script src="handtrack.min.js"></script>
+    <style>
+        #video {
+            width: 100%;
+            height: auto;
+        }
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <video id="video" autoplay playsinline></video>
+    <video id="video" autoplay></video>
     <canvas id="canvas"></canvas>
-  </div>
-  <script src="handtrack.min.js"></script>
-  <script src="script.js"></script>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+
+        const modelParams = {
+            flipHorizontal: true,   // Flip for webcam
+            imageScaleFactor: 0.7,  // Reduce input image size for faster processing
+            maxNumBoxes: 1,         // Detect a maximum of one hand
+            iouThreshold: 0.5,      // Intersection over Union threshold
+            scoreThreshold: 0.6,    // Confidence threshold
+        };
+
+        handTrack.load(modelParams).then(model => {
+            handTrack.startVideo(video).then(status => {
+                if (status) {
+                    navigator.getUserMedia(
+                        { video: {} },
+                        stream => {
+                            video.srcObject = stream;
+                            setInterval(() => {
+                                model.detect(video).then(predictions => {
+                                    model.renderPredictions(predictions, canvas, context, video);
+                                    if (predictions.length > 0) {
+                                        context.strokeStyle = 'green';
+                                        setTimeout(() => {
+                                            context.strokeStyle = 'red';
+                                        }, 1000);
+                                    }
+                                });
+                            }, 100);
+                        },
+                        err => console.log(err)
+                    );
+                }
+            });
+        });
+    </script>
 </body>
 </html>
