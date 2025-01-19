@@ -48,9 +48,16 @@
     <button id="resetButton">Reset</button>
 
     <a-scene embedded>
-        <a-entity id="box1" gltf-model="treasure_box.glb" position="-1 0 -3"></a-entity>
-        <a-entity id="box2" gltf-model="treasure_box.glb" position="0 0 -3"></a-entity>
-        <a-entity id="box3" gltf-model="treasure_box.glb" position="1 0 -3"></a-entity>
+        <!-- Preload 3D Models -->
+        <a-assets>
+            <a-asset-item id="treasureBoxModel" src="treasure_box.glb"></a-asset-item>
+            <a-asset-item id="giftModel" src="gift0.glb"></a-asset-item>
+        </a-assets>
+
+        <!-- Treasure Boxes -->
+        <a-entity id="box1" gltf-model="#treasureBoxModel" position="-1 0 -3" scale="0.5 0.5 0.5"></a-entity>
+        <a-entity id="box2" gltf-model="#treasureBoxModel" position="0 0 -3" scale="0.5 0.5 0.5"></a-entity>
+        <a-entity id="box3" gltf-model="#treasureBoxModel" position="1 0 -3" scale="0.5 0.5 0.5"></a-entity>
     </a-scene>
 
     <script>
@@ -61,7 +68,7 @@
 
         const modelParams = {
             flipHorizontal: true,
-            imageScaleFactor: 0.6,
+            imageScaleFactor: 0.7,
             maxNumBoxes: 5,
             iouThreshold: 0.5,
             scoreThreshold: 0.7,
@@ -95,20 +102,26 @@
                     const { bbox, label } = prediction;
                     const [x, y, width, height] = bbox;
 
-                    // Highlight face or hand
                     if (label === 'face' || label === 'hand') {
                         context.strokeStyle = 'green';
                         context.lineWidth = 4;
                         context.strokeRect(x, y, width, height);
 
-                        // If hand is near a box, reveal the gift
-                        if (label === 'hand' && width > 100) { // Example proximity check
-                            const box = document.querySelector(`#box${Math.ceil(Math.random() * 3)}`);
-                            box.setAttribute('gltf-model', 'gift0.glb');
+                        // If hand is near a box, replace the box with a gift
+                        if (label === 'hand' && width > 100) {
+                            const handCenterX = x + width / 2;
+
+                            if (handCenterX < window.innerWidth / 3) {
+                                document.getElementById('box1').setAttribute('gltf-model', '#giftModel');
+                            } else if (handCenterX < (2 * window.innerWidth) / 3) {
+                                document.getElementById('box2').setAttribute('gltf-model', '#giftModel');
+                            } else {
+                                document.getElementById('box3').setAttribute('gltf-model', '#giftModel');
+                            }
                         }
                     }
                 });
-            }, 100);
+            }, 60);
         };
 
         resetButton.addEventListener('click', () => {
